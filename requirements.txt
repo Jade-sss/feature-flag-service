@@ -7,6 +7,8 @@ redis>=4.5
 pydantic
 pydantic-settings
 python-dotenv
+python-json-logger>=3.0
+prometheus-client>=0.20
 pytest
 pytest-asyncio
 httpx

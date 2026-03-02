@@ -17,5 +17,9 @@ class Settings(BaseSettings):
     RATE_LIMIT_REQUESTS: int = 100         # max requests per window per IP
     RATE_LIMIT_WINDOW: int = 60            # sliding window in seconds
 
+    # ── Logging ───────────────────────────────────────────────────────────
+    LOG_FORMAT: str = "text"               # "json" for production, "text" for dev
+    LOG_LEVEL: str = "INFO"
+
 
 settings = Settings()

@@ -69,11 +69,16 @@ def _flag_key(key: str) -> str:
 
 async def get_flag(key: str) -> Optional[dict]:
     """Return cached flag dict or None."""
+    from app.middleware.prometheus import CACHE_HITS, CACHE_MISSES
     if not _pool:
         return None
     try:
         raw = await _pool.get(_flag_key(key))
-        return json.loads(raw) if raw else None
+        if raw:
+            CACHE_HITS.labels(cache_type="flag").inc()
+            return json.loads(raw)
+        CACHE_MISSES.labels(cache_type="flag").inc()
+        return None
     except Exception:
         logger.debug("cache get_flag error", exc_info=True)
         return None
@@ -117,12 +122,15 @@ def _eval_key(flag_key: str, user_id: str) -> str:
 
 async def get_evaluation(flag_key: str, user_id: str) -> Optional[bool]:
     """Return cached evaluation bool or None (cache miss)."""
+    from app.middleware.prometheus import CACHE_HITS, CACHE_MISSES
     if not _pool:
         return None
     try:
         raw = await _pool.get(_eval_key(flag_key, user_id))
         if raw is None:
+            CACHE_MISSES.labels(cache_type="eval").inc()
             return None
+        CACHE_HITS.labels(cache_type="eval").inc()
         return raw == "1"
     except Exception:
         logger.debug("cache get_evaluation error", exc_info=True)
