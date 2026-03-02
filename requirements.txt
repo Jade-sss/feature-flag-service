@@ -3,8 +3,11 @@ uvicorn[standard]
 SQLAlchemy>=1.4
 alembic
 asyncpg
-aioredis
+redis>=4.5
 pydantic
+pydantic-settings
 python-dotenv
 pytest
+pytest-asyncio
 httpx
+aiosqlite

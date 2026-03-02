@@ -5,6 +5,7 @@ from app.schemas.flag import FeatureFlagCreate, FeatureFlagRead, FeatureFlagUpda
 from app.db.session import AsyncSessionLocal
 from app.db.repositories.flag_repository import FlagRepository
 from app.services.evaluator import Evaluator
+from app.cache import redis_cache
 
 router = APIRouter(prefix="/flags", tags=["flags"])
 
@@ -19,6 +20,7 @@ async def create_flag(payload: FeatureFlagCreate, session: AsyncSession = Depend
     if existing:
         raise HTTPException(status_code=400, detail="Flag key exists")
     obj = await repo.create(payload)
+    await redis_cache.invalidate_flag(payload.key)
     return obj
 
 @router.get("/", response_model=List[FeatureFlagRead])
@@ -40,6 +42,7 @@ async def update_flag(key: str, payload: FeatureFlagUpdate, session: AsyncSessio
     obj = await repo.update(key, payload)
     if not obj:
         raise HTTPException(status_code=404, detail="Not found")
+    await redis_cache.invalidate_flag(key)
     return obj
 
 @router.delete("/{key}")
@@ -48,6 +51,7 @@ async def delete_flag(key: str, session: AsyncSession = Depends(get_session)):
     ok = await repo.delete(key)
     if not ok:
         raise HTTPException(status_code=404, detail="Not found")
+    await redis_cache.invalidate_flag(key)
     return {"deleted": True}
 
 @router.get("/evaluate")
