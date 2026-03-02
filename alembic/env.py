@@ -9,6 +9,11 @@ fileConfig(config.config_file_name)
 
 from app.core.config import settings
 from app.db.base import Base
+
+# Import all models so Alembic autogenerate detects them
+from app.db.models.feature_flag import FeatureFlag, FlagOverride  # noqa: F401
+from app.db.models.api_key import APIKey  # noqa: F401
+
 target_metadata = Base.metadata
 
 def run_migrations_offline():

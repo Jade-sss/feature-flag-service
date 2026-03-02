@@ -348,6 +348,26 @@ Available at `GET /metrics`:
 
 ---
 
+## Deployment
+
+Full deployment guides for **DigitalOcean** (App Platform and Droplet + Docker Compose) are in **[docs/deployment.md](docs/deployment.md)**.
+
+**Quick start with Docker Compose (local):**
+
+```bash
+docker compose up --build        # starts app + postgres + redis
+docker compose run --rm migrate  # creates tables
+curl http://localhost:8000/health
+```
+
+**Quick deploy to DigitalOcean App Platform:**
+
+```bash
+doctl apps create --spec .do/app.yaml
+```
+
+---
+
 ## License
 
 MIT

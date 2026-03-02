@@ -1,0 +1,69 @@
+# docker-compose.yml — local development & integration testing
+# Usage: docker compose up --build
+
+services:
+  # ── Application ──────────────────────────────────────────────────────────────
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ENV: development
+      DATABASE_URL: postgresql+asyncpg://featureflags:featureflags@postgres:5432/featureflags
+      REDIS_URL: redis://redis:6379/0
+      AUTH_ENABLED: "true"
+      MASTER_API_KEY: "change-me-in-production"
+      LOG_FORMAT: json
+      CORS_ORIGINS: "*"
+      ALLOWED_HOSTS: "*"
+    restart: unless-stopped
+
+  # ── Database ─────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: featureflags
+      POSTGRES_PASSWORD: featureflags
+      POSTGRES_DB: featureflags
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U featureflags"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Cache ────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Database migrations (run once) ──────────────────────────────────────────
+  migrate:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://featureflags:featureflags@postgres:5432/featureflags
+    command: ["python", "-m", "alembic", "upgrade", "head"]
+    restart: "no"
+
+volumes:
+  pgdata:
+  redisdata:
