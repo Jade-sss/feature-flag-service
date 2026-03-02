@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+SQLAlchemy>=1.4
+alembic
+asyncpg
+aioredis
+pydantic
+python-dotenv
+pytest
+httpx
