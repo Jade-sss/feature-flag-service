@@ -21,5 +21,28 @@ class Settings(BaseSettings):
     LOG_FORMAT: str = "text"               # "json" for production, "text" for dev
     LOG_LEVEL: str = "INFO"
 
+    # ── CORS ──────────────────────────────────────────────────────────────
+    CORS_ORIGINS: str = "*"                # comma-separated origins or "*"
+
+    # ── Trusted hosts ─────────────────────────────────────────────────────
+    ALLOWED_HOSTS: str = "*"               # comma-separated or "*"
+
+    # ── Database pool ─────────────────────────────────────────────────────
+    DB_POOL_SIZE: int = 10
+    DB_POOL_MAX_OVERFLOW: int = 20
+    DB_POOL_RECYCLE: int = 3600            # recycle connections every hour
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        if self.CORS_ORIGINS.strip() == "*":
+            return ["*"]
+        return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
+    @property
+    def allowed_host_list(self) -> list[str]:
+        if self.ALLOWED_HOSTS.strip() == "*":
+            return ["*"]
+        return [h.strip() for h in self.ALLOWED_HOSTS.split(",") if h.strip()]
+
 
 settings = Settings()

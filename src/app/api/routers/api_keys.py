@@ -31,11 +31,6 @@ async def create_api_key(
     session: AsyncSession = Depends(get_session),
     _admin: APIKey = Depends(require_admin),
 ):
-    if payload.role not in ("admin", "readonly"):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="role must be 'admin' or 'readonly'",
-        )
     repo = APIKeyRepository(session)
     record, raw_key = await repo.create(name=payload.name, role=payload.role)
     return APIKeyCreated(

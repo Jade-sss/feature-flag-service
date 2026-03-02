@@ -1,10 +1,10 @@
-from typing import Optional
-from pydantic import BaseModel, ConfigDict
+from typing import Literal, Optional
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class APIKeyCreate(BaseModel):
-    name: str
-    role: str = "readonly"  # "admin" or "readonly"
+    name: str = Field(..., min_length=1, max_length=200)
+    role: Literal["admin", "readonly"] = "readonly"
 
 
 class APIKeyRead(BaseModel):
