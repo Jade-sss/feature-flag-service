@@ -1,5 +1,8 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
+
+# ── Feature Flag schemas ─────────────────────────────────────────────────────
 
 class FeatureFlagBase(BaseModel):
     key: str
@@ -19,5 +22,18 @@ class FeatureFlagUpdate(BaseModel):
 
 class FeatureFlagRead(FeatureFlagBase):
     id: int
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ── Per-user Override schemas ─────────────────────────────────────────────────
+
+class FlagOverrideCreate(BaseModel):
+    user_id: str
+    enabled: bool
+
+class FlagOverrideRead(BaseModel):
+    id: int
+    flag_id: int
+    user_id: str
+    enabled: bool
+    model_config = ConfigDict(from_attributes=True)
