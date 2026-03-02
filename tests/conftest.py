@@ -3,8 +3,14 @@ import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from app.db.base import Base
 from app.db.models.feature_flag import FeatureFlag, FlagOverride  # noqa: F401 — ensure models registered
+from app.db.models.api_key import APIKey as APIKeyModel  # noqa: F401 — ensure model registered
+from app.core.config import settings
 from app.main import app
-from app.api.routers.flags import get_session
+from app.db.session import get_session
+
+# Disable auth by default so existing functional tests still pass unchanged.
+# The test_auth.py file re-enables it for auth-specific tests.
+settings.AUTH_ENABLED = False
 
 # In-memory SQLite for tests
 TEST_DB_URL = "sqlite+aiosqlite://"

@@ -5,7 +5,7 @@ from app.schemas.flag import (
     FeatureFlagCreate, FeatureFlagRead, FeatureFlagUpdate,
     FlagOverrideCreate, FlagOverrideRead,
 )
-from app.db.session import AsyncSessionLocal
+from app.db.session import AsyncSessionLocal, get_session
 from app.db.repositories.flag_repository import FlagRepository
 from app.services.evaluator import Evaluator
 from app.cache import redis_cache
@@ -13,9 +13,16 @@ from app.cache import redis_cache
 router = APIRouter(prefix="/flags", tags=["flags"])
 
 
-async def get_session():
-    async with AsyncSessionLocal() as session:
-        yield session
+# ── Lazy import helpers to avoid circular deps ───────────────────────────
+
+def _require_any_key():
+    from app.api.deps import require_any_key
+    return require_any_key
+
+
+def _require_admin():
+    from app.api.deps import require_admin
+    return require_admin
 
 
 # ── Evaluation (before /{key} so it doesn't get shadowed) ────────────────
@@ -25,6 +32,7 @@ async def evaluate_flag(
     key: str = Query(..., description="Flag key"),
     user_id: Optional[str] = Query(None, description="User ID for per-user evaluation"),
     session: AsyncSession = Depends(get_session),
+    _caller=Depends(_require_any_key()),
 ):
     evaluator = Evaluator(session)
     result = await evaluator.evaluate(key, user_id)
@@ -42,6 +50,7 @@ async def evaluate_flag(
 async def create_flag(
     payload: FeatureFlagCreate,
     session: AsyncSession = Depends(get_session),
+    _caller=Depends(_require_admin()),
 ):
     repo = FlagRepository(session)
     existing = await repo.get_by_key(payload.key)
@@ -60,13 +69,14 @@ async def list_flags(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
     session: AsyncSession = Depends(get_session),
+    _caller=Depends(_require_any_key()),
 ):
     repo = FlagRepository(session)
     return await repo.list(limit=limit, offset=offset)
 
 
 @router.get("/{key}", response_model=FeatureFlagRead, summary="Get a flag by key")
-async def get_flag(key: str, session: AsyncSession = Depends(get_session)):
+async def get_flag(key: str, session: AsyncSession = Depends(get_session), _caller=Depends(_require_any_key())):
     repo = FlagRepository(session)
     obj = await repo.get_by_key(key)
     if not obj:
@@ -79,6 +89,7 @@ async def update_flag(
     key: str,
     payload: FeatureFlagUpdate,
     session: AsyncSession = Depends(get_session),
+    _caller=Depends(_require_admin()),
 ):
     repo = FlagRepository(session)
     obj = await repo.update(key, payload)
@@ -93,7 +104,7 @@ async def update_flag(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a flag",
 )
-async def delete_flag(key: str, session: AsyncSession = Depends(get_session)):
+async def delete_flag(key: str, session: AsyncSession = Depends(get_session), _caller=Depends(_require_admin())):
     repo = FlagRepository(session)
     ok = await repo.delete(key)
     if not ok:
@@ -109,7 +120,7 @@ async def delete_flag(key: str, session: AsyncSession = Depends(get_session)):
     response_model=List[FlagOverrideRead],
     summary="List per-user overrides for a flag",
 )
-async def list_overrides(key: str, session: AsyncSession = Depends(get_session)):
+async def list_overrides(key: str, session: AsyncSession = Depends(get_session), _caller=Depends(_require_admin())):
     repo = FlagRepository(session)
     flag = await repo.get_by_key(key)
     if not flag:
@@ -127,6 +138,7 @@ async def set_override(
     user_id: str,
     payload: FlagOverrideCreate,
     session: AsyncSession = Depends(get_session),
+    _caller=Depends(_require_admin()),
 ):
     repo = FlagRepository(session)
     flag = await repo.get_by_key(key)
@@ -146,6 +158,7 @@ async def delete_override(
     key: str,
     user_id: str,
     session: AsyncSession = Depends(get_session),
+    _caller=Depends(_require_admin()),
 ):
     repo = FlagRepository(session)
     flag = await repo.get_by_key(key)
